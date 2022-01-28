@@ -1,8 +1,11 @@
 name = "bls"
 type = "javascript"
 
-account_id = ""
+account_id = "03d80f2db874d8de9b4069ef58cfb0ca"
 workers_dev = true
-route = ""
-zone_id = ""
 compatibility_date = "2022-01-28"
+
+[env.production]
+workers_dev = false
+route = "bls-api.bunkum.us/*"
+zone_id = "864e8fad4ee97de2f58a9c4589f92631"
