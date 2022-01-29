@@ -12,6 +12,9 @@
 
     <p>For example, <a href="https://api.bls.gov/publicAPI/v2/timeseries/data/LAUCN040010000000005">https://api.bls.gov/publicAPI/v2/timeseries/data/LAUCN040010000000005</a> and <a href="https://bls-api.bunkum.us/publicAPI/v2/timeseries/data/LAUCN040010000000005">https://bls-api.bunkum.us/publicAPI/v2/timeseries/data/LAUCN040010000000005</a> will have the same content.</p>
 
+    <h2>Strings to numbers</h2>
+    <p>The BLS API returns years and numeric values as strings. This proxy casts years to integers and numeric values to floats.</p>
+
     <h2>Caching</h2>
     <p>In order to not cause problems for the BLS's web API, we cache aggressively. The cache period will not be longer than 24 hours.</p>
 

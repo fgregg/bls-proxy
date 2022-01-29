@@ -58,27 +58,29 @@ async function blsRequest(request) {
   const sub_request = new Request(apiUrl, request)
   sub_request.headers.set("Origin", new URL(apiUrl).origin)
   let response = await fetch(sub_request)
-  response = new Response(response.body, response)
+  response = new Response(response.clone().body, response.clone())
 
   response.headers.append("Cache-Control", "s-maxage=86400");
   response.headers.delete('set-cookie');
-  
-  if (apiUrl.pathname.includes('.xlsx')) {
-    response.headers.set('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  } else {
-    response.headers.set('content-type', 'application/json')
-    const result = await response.json()
-    if (result.status === 'REQUEST_SUCCEEDED' && result.Results?.series) {
-      for (const series_result of result.Results.series) {
-	for (const cell of series_result.data) {
-	  if (cell.latest) {
-	    cell.latest = (cell.latest === 'true');
+
+  if (response.ok) {
+    if (apiUrl.pathname.includes('.xlsx')) {
+      response.headers.set('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    } else {
+      response.headers.set('content-type', 'application/json')
+      const result = await response.clone().json()
+      if (result.status === 'REQUEST_SUCCEEDED' && result.Results?.series) {
+	for (const series_result of result.Results.series) {
+	  for (const cell of series_result.data) {
+	    if (cell.latest) {
+	      cell.latest = (cell.latest === 'true');
+	    }
+	    cell.year = parseInt(cell.year);
+	    cell.value = parseFloat(cell.value);
 	  }
-	  cell.year = parseInt(cell.year);
-	  cell.value = parseFloat(cell.value);
 	}
+	response = new Response(JSON.stringify(result), response.clone())
       }
-      response = new Response(JSON.stringify(result), response)
     }
   }
 
