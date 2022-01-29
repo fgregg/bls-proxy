@@ -1,4 +1,5 @@
-import html from './index.html'
+import index_html from './index.html'
+import makeCacheKey from './cache_key.js'
 
 // We support the GET, POST, and OPTIONS methods from any origin,
 // and allow any header on requests. These headers must be present
@@ -19,105 +20,47 @@ function rawHtmlResponse(html) {
   })
 }
 
-
 async function handleRequest(request, context) {
 
-  let cache = caches.default
-  let response = await cache.match(request)
-    
-  if (!response){
-    response = await subRequest(request)
-    
-    if (response.ok) {
-      response.headers.append('Cache-Control', 's-maxage=86400')
-      context.waitUntil(cache.put(request, response.clone()))
-    }
-  }
-  response = new Response(response.body, response)
-  response.headers.append('Cache-Control', 'max-age=86400')
-  
-  return response
-}
-
-async function sha256(message) {
-  // encode as UTF-8
-  const msgBuffer = new TextEncoder().encode(message)
-
-  // hash the message
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer)
-
-  // convert ArrayBuffer to Array
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-
-  // convert bytes to hex string
-  const hashHex = hashArray.map(b => ("00" + b.toString(16)).slice(-2)).join("")
-  return hashHex
-}
-
-async function handlePostRequest(request, context) {
-  const body = await request.clone().text()
-
-  // Hash the request body to use it as a part of the cache key
-  const hash = await sha256(body)
-  const cacheUrl = new URL(request.url)
-
-  // Store the URL in cache by prepending the body's hash
-  cacheUrl.pathname = "/posts" + cacheUrl.pathname + hash
-
-  // Convert to a GET to be able to cache
-  const cacheKey = cacheUrl.toString()
+  const cacheKey = await makeCacheKey(request)
 
   const cache = caches.default
 
-  // Find the cache key in the cache
   let response = await cache.match(cacheKey)
-  // response = undefined
 
-  // Otherwise, fetch response to POST request from origin
   if (!response) {
-    response = await subRequest(request);
-    response.headers.append("Cache-Control", "s-maxage=86400");
-    const foobar = new Response(response)
-    context.waitUntil(cache.put(cacheKey, foobar));
+    response = await blsRequest(request);
+    const response_to_cache = new Response(response.clone().body, response.clone())
+    response_to_cache.headers.append("Cache-Control", "s-maxage=86400");
+    response_to_cache.headers.delete('set-cookie');    
+    context.waitUntil(cache.put(cacheKey, response_to_cache));
   }
-  else {
-    response = new Response(response.body, response)
-    response.headers.set("Access-Control-Allow-Origin", '*')
-    response.headers.append("Vary", "Origin")
+
+  response = new Response(response.body, response)
+  response.headers.set("Access-Control-Allow-Origin", '*')
+  //Append to/Add Vary header so browser will cache response correctly
+  response.headers.append("Vary", "Origin")
+
+  if (request.method === 'GET') {
+    response.headers.append('Cache-Control', 'max-age=86400')
   }
-    
+  
   return response
 }
 
 
-
-async function subRequest(request) {
+async function blsRequest(request) {
 
   
   let apiUrl = new URL(request.url)
-  apiUrl.host = API_HOST
-
-  console.log('apiURL')
-  console.log(apiUrl)
+  apiUrl.host = 'api.bls.gov'
 
   // Rewrite request to point to API url. This also makes the request mutable
   // so we can add the correct Origin header to make the API server think
   // that this request isn't cross-site.
   const sub_request = new Request(apiUrl, request)
   sub_request.headers.set("Origin", new URL(apiUrl).origin)
-  const sub_response = await fetch(sub_request)
-
-  // Recreate the response so we can modify the headers
-  const response = new Response(sub_response.body, sub_response)
-
-  // Set CORS headers
-  response.headers.set("Access-Control-Allow-Origin", '*')
-
-  // Append to/Add Vary header so browser will cache response correctly
-  response.headers.append("Vary", "Origin")
-  response.headers.delete("cf-cache-status")
-
-  return response
+  return fetch(sub_request)
 }
 
 function handleOptions(request) {
@@ -148,7 +91,7 @@ function handleOptions(request) {
     // If you want to allow other HTTP Methods, you can do that here.
     return new Response(null, {
       headers: {
-        Allow: "GET, HEAD, POST, OPTIONS",
+        Allow: "GET, POST, OPTIONS",
       },
     })
   }
@@ -158,19 +101,13 @@ export default {
 async fetch(request, environment, context) {
   const url = new URL(request.url)
   if(url.pathname !== '/'){
-    console.log('pathname')
-    console.log(url.pathname)
     if (request.method === "OPTIONS") {
       // Handle CORS preflight requests
       return await handleOptions(request, context)
     }
-    else if(
-      request.method === "GET"
-    ){
+    else if (request.method === "GET" ||
+	     request.method === "POST")	{
       return await handleRequest(request, context)
-    }
-    else if(request.method === 'POST') {
-      return await handlePostRequest(request, context)
     }
     else {
       return new Response(null, {
@@ -181,7 +118,7 @@ async fetch(request, environment, context) {
   }
   else {
     // Serve demo page
-    return await rawHtmlResponse(html)
+    return await rawHtmlResponse(index_html)
   }
 }
 }
