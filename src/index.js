@@ -30,10 +30,7 @@ async function handleRequest(request, context) {
 
   if (!response) {
     response = await blsRequest(request);
-    const response_to_cache = new Response(response.clone().body, response.clone())
-    response_to_cache.headers.append("Cache-Control", "s-maxage=86400");
-    response_to_cache.headers.delete('set-cookie');    
-    context.waitUntil(cache.put(cacheKey, response_to_cache));
+    context.waitUntil(cache.put(cacheKey, response.clone()));
   }
 
   response = new Response(response.body, response)
@@ -60,7 +57,19 @@ async function blsRequest(request) {
   // that this request isn't cross-site.
   const sub_request = new Request(apiUrl, request)
   sub_request.headers.set("Origin", new URL(apiUrl).origin)
-  return fetch(sub_request)
+  let response = await fetch(sub_request)
+  response = new Response(response.body, response)
+
+  response.headers.append("Cache-Control", "s-maxage=86400");
+  response.headers.delete('set-cookie');    
+  
+  if (apiUrl.pathname.includes('.xlsx')) {
+    response.headers.set('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  } else {
+    response.headers.set('content-type', 'application/json')
+  }
+
+  return response
 }
 
 function handleOptions(request) {
