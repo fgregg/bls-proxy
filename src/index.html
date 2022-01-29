@@ -1,48 +1,24 @@
 <!DOCTYPE html>
-  <html>
+<html>
+  <head>
+    <title>BLS Web API with CORS</title>
+  </head>
   <body>
-    <h1>API GET without CORS Proxy</h1>
-    <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#Checking_that_the_fetch_was_successful">Shows TypeError: Failed to fetch since CORS is misconfigured</a>
-    <p id="noproxy-status"/>
-    <code id="noproxy">Waiting</code>
-    <h1>API GET with CORS Proxy</h1>
-    <p id="proxy-status"/>
-    <code id="proxy">Waiting</code>
-    <h1>API POST with CORS Proxy + Preflight</h1>
-    <p id="proxypreflight-status"/>
-    <code id="proxypreflight">Waiting</code>
-    <script>
-    let reqs = {};
-    reqs.noproxy = () => {
-      return fetch("${API_HOST}").then(r => r.json())
-    }
-    reqs.proxy = async () => {
-      let href = "${PROXY_ENDPOINT}?apiurl=${API_HOST}"
-      return fetch(window.location.origin + href).then(r => r.json())
-    }
-    reqs.proxypreflight = async () => {
-      let href = "${PROXY_ENDPOINT}?apiurl=${API_HOST}"
-      let response = await fetch(window.location.origin + href, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          msg: "Hello world!"
-        })
-      })
-      return response.json()
-    }
-    (async () => {
-      for (const [reqName, req] of Object.entries(reqs)) {
-        try {
-          let data = await req()
-          document.getElementById(reqName).innerHTML = JSON.stringify(data)
-        } catch (e) {
-          document.getElementById(reqName).innerHTML = e
-        }
-      }
-    })()
-    </script>
+    <h1>What is this?</h1>
+    <p>The <a href="https://www.bls.gov/developers/home.htm">US Bureau of Labor Statistics has very nice web API</a>. Unfortunately, BLS has not set up CORS headers that would allow web developers to easily load BLS data into other sites.</p>
+    <p>This site proxies the BLS's API and adds open CORS headers</p>
+
+    <p>To use this site, <a href="https://www.bls.gov/developers/home.htm">refer to the BLS's web API documentation</a>. For all the API methods, replace the base url of <code>api.bls.gov</code> with <code>bls-api.bunkum.us</code>.
+
+    <p>For example, <a href="https://api.bls.gov/publicAPI/v2/timeseries/data/LAUCN040010000000005">https://api.bls.gov/publicAPI/v2/timeseries/data/LAUCN040010000000005</a> and <a href="https://bls-api.bunkum.us/publicAPI/v2/timeseries/data/LAUCN040010000000005">https://bls-api.bunkum.us/publicAPI/v2/timeseries/data/LAUCN040010000000005</a> will have the same content.</p>
+
+    <h2>Caching</h2>
+    <p>In order to not cause problems for the BLS's web API, we cache aggressively. The cache period will not be longer than 24 hours.</p>
+
+    <h2>Contributing</h2>
+    <a href="https://github.com/fgregg/bls-proxy">Here's the code for this site</a>. There's a number of ways it could be made be better, if you'd like to contribute.
+
+    <h2>Who built this?</h2>
+    <p><a href="https://twitter.com/forestgregg">Forest Gregg</a></p>
   </body>
   </html>
