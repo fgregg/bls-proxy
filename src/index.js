@@ -1,3 +1,4 @@
+import html from './index.html'
 
 // We support the GET, POST, and OPTIONS methods from any origin,
 // and allow any header on requests. These headers must be present
@@ -9,14 +10,6 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 }
 
-// The URL for the remote third party API you want to fetch from
-// but does not implement CORS
-const API_HOST = "api.bls.gov"
-
-// publicAPI/v2/timeseries/data/"
-
-const PROXY_ENDPOINT = 'foo'
-
 // The rest of this snippet for the demo page
 function rawHtmlResponse(html) {
   return new Response(html, {
@@ -26,55 +19,6 @@ function rawHtmlResponse(html) {
   })
 }
 
-const DEMO_PAGE = `
-  <!DOCTYPE html>
-  <html>
-  <body>
-    <h1>API GET without CORS Proxy</h1>
-    <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#Checking_that_the_fetch_was_successful">Shows TypeError: Failed to fetch since CORS is misconfigured</a>
-    <p id="noproxy-status"/>
-    <code id="noproxy">Waiting</code>
-    <h1>API GET with CORS Proxy</h1>
-    <p id="proxy-status"/>
-    <code id="proxy">Waiting</code>
-    <h1>API POST with CORS Proxy + Preflight</h1>
-    <p id="proxypreflight-status"/>
-    <code id="proxypreflight">Waiting</code>
-    <script>
-    let reqs = {};
-    reqs.noproxy = () => {
-      return fetch("${API_HOST}").then(r => r.json())
-    }
-    reqs.proxy = async () => {
-      let href = "${PROXY_ENDPOINT}?apiurl=${API_HOST}"
-      return fetch(window.location.origin + href).then(r => r.json())
-    }
-    reqs.proxypreflight = async () => {
-      let href = "${PROXY_ENDPOINT}?apiurl=${API_HOST}"
-      let response = await fetch(window.location.origin + href, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          msg: "Hello world!"
-        })
-      })
-      return response.json()
-    }
-    (async () => {
-      for (const [reqName, req] of Object.entries(reqs)) {
-        try {
-          let data = await req()
-          document.getElementById(reqName).innerHTML = JSON.stringify(data)
-        } catch (e) {
-          document.getElementById(reqName).innerHTML = e
-        }
-      }
-    })()
-    </script>
-  </body>
-  </html>`
 
 async function handleRequest(request, context) {
 
@@ -213,7 +157,9 @@ function handleOptions(request) {
 export default {
 async fetch(request, environment, context) {
   const url = new URL(request.url)
-  if(url.pathname){
+  if(url.pathname !== '/'){
+    console.log('pathname')
+    console.log(url.pathname)
     if (request.method === "OPTIONS") {
       // Handle CORS preflight requests
       return await handleOptions(request, context)
@@ -235,7 +181,7 @@ async fetch(request, environment, context) {
   }
   else {
     // Serve demo page
-    return await rawHtmlResponse(DEMO_PAGE)
+    return await rawHtmlResponse(html)
   }
 }
 }
