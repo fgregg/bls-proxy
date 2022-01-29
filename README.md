@@ -1,15 +1,6 @@
-# 👷 `worker-template` Hello World
+# BLS CORS Proxy, with caching
 
-A template for kick starting a Cloudflare worker project.
+The <a href="https://www.bls.gov/developers/home.htm">US Bureau of Labor Statistics has very nice web API</a>. Unfortunately, BLS has not set up CORS headers that would allow web developers to easily load BLS data into other sites.
 
-[`index.js`](https://github.com/cloudflare/worker-template/blob/master/index.js) is the content of the Workers script.
+This is the code for [proxy of the BLS's API that adds open CORS headers, with caching](https://bls-api.bunkum.us/).
 
-#### Wrangler
-
-To generate using [wrangler](https://github.com/cloudflare/wrangler)
-
-```
-wrangler generate projectname https://github.com/cloudflare/worker-template
-```
-
-Further documentation for Wrangler can be found [here](https://developers.cloudflare.com/workers/tooling/wrangler).
