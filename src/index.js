@@ -32,15 +32,6 @@ async function handleRequest(request, context) {
     response = await blsRequest(request);
     context.waitUntil(cache.put(cacheKey, response.clone()));
   }
-
-  response = new Response(response.body, response)
-  response.headers.set("Access-Control-Allow-Origin", '*')
-  //Append to/Add Vary header so browser will cache response correctly
-  response.headers.append("Vary", "Origin")
-
-  if (request.method === 'GET') {
-    response.headers.append('Cache-Control', 'max-age=86400')
-  }
   
   return response
 }
@@ -74,6 +65,15 @@ async function blsRequest(request) {
   response = new Response(response.clone().body, response.clone())
 
   response.headers.append("Cache-Control", "s-maxage=86400");
+  response.headers.set("Access-Control-Allow-Origin", '*')
+  //Append to/Add Vary header so browser will cache response correctly
+  response.headers.append("Vary", "Origin")
+
+  if (request.method === 'GET') {
+    response.headers.append('Cache-Control', 'max-age=86400')
+  }
+
+  // need to delete this header in order to cache
   response.headers.delete('set-cookie');
 
   if (response.ok) {
