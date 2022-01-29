@@ -45,6 +45,19 @@ async function handleRequest(request, context) {
   return response
 }
 
+function castNumber(data) {
+  for (const series_result of data.Results.series) {
+    for (const cell of series_result.data) {
+      if (cell.latest) {
+	cell.latest = (cell.latest === 'true');
+      }
+      cell.year = parseInt(cell.year);
+      cell.value = parseFloat(cell.value);
+    }
+  }
+  return data
+}
+
 
 async function blsRequest(request) {
 
@@ -70,16 +83,8 @@ async function blsRequest(request) {
       response.headers.set('content-type', 'application/json')
       const result = await response.clone().json()
       if (result.status === 'REQUEST_SUCCEEDED' && result.Results?.series) {
-	for (const series_result of result.Results.series) {
-	  for (const cell of series_result.data) {
-	    if (cell.latest) {
-	      cell.latest = (cell.latest === 'true');
-	    }
-	    cell.year = parseInt(cell.year);
-	    cell.value = parseFloat(cell.value);
-	  }
-	}
-	response = new Response(JSON.stringify(result), response.clone())
+	response = new Response(JSON.stringify(castNumber(result)),
+				response.clone())
       }
     }
   }
