@@ -5,6 +5,15 @@ account_id = "03d80f2db874d8de9b4069ef58cfb0ca"
 workers_dev = true
 compatibility_date = "2022-01-28"
 
+[build.upload]
+format = "modules"
+dir = "./src"
+main = "./index.js" # becomes "./src/worker.js"
+
+[[build.upload.rules]]
+type = "ESModule"
+globs = ["**/*.js"]
+
 [env.production]
 workers_dev = false
 route = "bls-api.bunkum.us/*"

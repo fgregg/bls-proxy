@@ -1,3 +1,4 @@
+
 // We support the GET, POST, and OPTIONS methods from any origin,
 // and allow any header on requests. These headers must be present
 // on all responses to all CORS preflight requests. In practice, this means
@@ -75,17 +76,17 @@ const DEMO_PAGE = `
   </body>
   </html>`
 
-async function handleRequest(event) {
+async function handleRequest(request, context) {
 
   let cache = caches.default
-  let response = await cache.match(event.request)
+  let response = await cache.match(request)
     
   if (!response){
-    response = await subRequest(event.request)
+    response = await subRequest(request)
     
     if (response.ok) {
       response.headers.append('Cache-Control', 's-maxage=86400')
-      event.waitUntil(cache.put(event.request, response.clone()))
+      context.waitUntil(cache.put(request, response.clone()))
     }
   }
   response = new Response(response.body, response)
@@ -109,8 +110,7 @@ async function sha256(message) {
   return hashHex
 }
 
-async function handlePostRequest(event) {
-  const request = event.request
+async function handlePostRequest(request, context) {
   const body = await request.clone().text()
 
   // Hash the request body to use it as a part of the cache key
@@ -133,16 +133,8 @@ async function handlePostRequest(event) {
   if (!response) {
     response = await subRequest(request);
     response.headers.append("Cache-Control", "s-maxage=86400");
-    let foobar = new Response(response.clone().body)
-    await cache.put(cacheKey, foobar)
-    let cache_test = await cache.match(cacheKey)
-    console.log(cache_test)
-    let test_response = new Response('bar')
-    await cache.put('https://google.com', test_response)
-    cache_test = await cache.match('https://google.com')
-    console.log(cache_test)
-    
-    event.waitUntil(cache.put(cacheKey, response.clone()));
+    const foobar = new Response(response)
+    context.waitUntil(cache.put(cacheKey, foobar));
   }
   else {
     response = new Response(response.body, response)
@@ -181,8 +173,6 @@ async function subRequest(request) {
   response.headers.append("Vary", "Origin")
   response.headers.delete("cf-cache-status")
 
-  response.url = request.url
-  
   return response
 }
 
@@ -220,34 +210,32 @@ function handleOptions(request) {
   }
 }
 
-
-addEventListener("fetch", event => {
-  const request = event.request
+export default {
+async fetch(request, environment, context) {
   const url = new URL(request.url)
   if(url.pathname){
     if (request.method === "OPTIONS") {
       // Handle CORS preflight requests
-      return event.respondWith(handleOptions(request))
+      return await handleOptions(request, context)
     }
     else if(
       request.method === "GET"
     ){
-      return event.respondWith(handleRequest(event))
+      return await handleRequest(request, context)
     }
     else if(request.method === 'POST') {
-     return  event.respondWith(handlePostRequest(event))
+      return await handlePostRequest(request, context)
     }
     else {
-      return event.respondWith(
-        new Response(null, {
+      return new Response(null, {
           status: 405,
           statusText: "Method Not Allowed",
-        }),
-      )
+      })
     }
   }
   else {
     // Serve demo page
-    return event.respondWith(rawHtmlResponse(DEMO_PAGE))
+    return await rawHtmlResponse(DEMO_PAGE)
   }
-})
+}
+}
